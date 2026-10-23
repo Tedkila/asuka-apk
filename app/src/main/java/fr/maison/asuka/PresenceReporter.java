@@ -11,12 +11,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 
 final class PresenceReporter {
+    interface TokenSource { String get() throws Exception; }
     private final Settings settings;
+    private final TokenSource tokenSource;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(16), new ThreadPoolExecutor.DiscardOldestPolicy());
     private String previous = "";
-    PresenceReporter(Settings s) {
-        settings=s;
+    PresenceReporter(Settings s) { this(s, () -> s.secret("token")); }
+    PresenceReporter(Settings s, TokenSource source) {
+        settings=s; tokenSource=source;
         if (!s.p.contains("device")) s.p.edit().putString("device", "asuka-" + UUID.randomUUID()).apply();
     }
     void changed(String state, boolean teddy) {
@@ -26,7 +29,7 @@ final class PresenceReporter {
         worker.execute(() -> {
             HttpURLConnection connection=null;
             try {
-                String token=settings.secret("token");
+                String token=tokenSource.get();
                 if (token.isEmpty()) return; // Configure the house token first; never send anonymous presence.
                 JSONObject body=new JSONObject().put("appareil", settings.p.getString("device", "asuka"))
                     .put("piece", room).put("teddy", teddy).put("heure", instant).put("etat", state);

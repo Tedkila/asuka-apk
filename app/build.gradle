@@ -6,9 +6,26 @@ android {
         applicationId 'fr.maison.asuka'
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '0.1-base'
+        versionCode 2
+        versionName '0.2-local'
     }
+    packaging { jniLibs { useLegacyPackaging = true } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
-dependencies { testImplementation 'junit:junit:4.13.2' }
+dependencies {
+    implementation 'org.opencv:opencv:4.10.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+}
+android { testOptions { unitTests.includeAndroidResources = true } }
+tasks.register('verifyModels', Exec) {
+    workingDir rootDir
+    commandLine 'python3', 'scripts/models.py', '--verify'
+}
+tasks.matching { it.name == 'packageDebug' || it.name == 'packageRelease' }.configureEach { dependsOn 'verifyModels' }
+tasks.withType(Test).configureEach {
+    systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+    ['user.home', 'https.proxyHost', 'https.proxyPort', 'http.proxyHost', 'http.proxyPort', 'javax.net.ssl.trustStore', 'javax.net.ssl.trustStorePassword'].each { key ->
+        if (System.getProperty(key) != null) systemProperty key, System.getProperty(key)
+    }
+}

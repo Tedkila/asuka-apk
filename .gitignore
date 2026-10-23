@@ -4,3 +4,5 @@ local.properties
 **/build/
 *.jks
 *.keystore
+# Public model binaries fetched and verified before each build.
+app/src/main/assets/models/*.onnx
