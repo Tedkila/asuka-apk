@@ -2,6 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'fr.maison.asuka'
     compileSdk 35
+    buildToolsVersion "35.0.0"
     defaultConfig {
         applicationId 'fr.maison.asuka'
         minSdk 26
