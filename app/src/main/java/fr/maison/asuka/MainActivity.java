@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     PresenceReporter reporter;
     long lastSeen;
     int matches;
-    boolean cameraActive, settingsOpen, manualNight;
+    boolean cameraActive, settingsOpen, pinDialogOpen, manualNight;
     Runnable enrollmentTimeout;
     ValueAnimator fade;
     private final Runnable clock = new Runnable() {
@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
     }
     @Override protected void onPause() {
         foreground=false; manualNight=false;
-        for(Dialog dialog:new java.util.ArrayList<>(dialogs)) dialog.dismiss(); dialogs.clear(); settingsOpen=false; settingsOpen=false; stopCamera(); cancelEnrollment(); ui.removeCallbacks(clock);
+        for(Dialog dialog:new java.util.ArrayList<>(dialogs)) dialog.dismiss(); dialogs.clear(); settingsOpen=false; pinDialogOpen=false; settingsOpen=false; stopCamera(); cancelEnrollment(); ui.removeCallbacks(clock);
         if (web != null) web.onPause();
         locked("Bonjour !", Mode.LOCKED); super.onPause();
     }
@@ -143,11 +143,13 @@ public class MainActivity extends Activity {
         box.addView(edit); return edit;
     }
     void choosePin(Runnable done) {
+        pinDialogOpen=true; brightness(.5f,false);
         LinearLayout box = column("Choisis ton code personnel (6 chiffres minimum)");
         EditText first = input(box, "Code", "", true), second = input(box, "Encore une fois", "", true);
         first.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
         second.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
         AlertDialog dialog = new AlertDialog.Builder(this).setView(box).setPositiveButton("Enregistrer", null).setCancelable(false).create();
+        dialog.setOnDismissListener(d -> pinDialogOpen=false);
         dialog.setOnShowListener(d -> dialog.getButton(-1).setOnClickListener(v -> {
             String pin = first.getText().toString();
             if (!pin.matches("[0-9]{6,12}") || !pin.equals(second.getText().toString())) { toast("Entre deux fois le même code, de 6 à 12 chiffres."); return; }
@@ -157,11 +159,11 @@ public class MainActivity extends Activity {
     void authenticate(Runnable done) {
         if (!settings.hasPin()) { choosePin(done); return; }
         if (SystemClock.elapsedRealtime() < pinBlockedUntil) { toast("Patiente une minute avant de réessayer."); return; }
-        brightness(.5f,false);
+        pinDialogOpen=true; brightness(.5f,false);
         LinearLayout box = column("Code de Teddy"); EditText code = input(box, "Code", "", true);
         code.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
         AlertDialog dialog = new AlertDialog.Builder(this).setView(box).setPositiveButton("Ouvrir", null).setNegativeButton("Annuler", null).create();
-        dialog.setOnDismissListener(d -> { if(mode==Mode.STANDBY || mode==Mode.SLEEP) brightness(.001f,false); });
+        dialog.setOnDismissListener(d -> { pinDialogOpen=false; if(mode==Mode.STANDBY || mode==Mode.SLEEP) brightness(.001f,false); });
         dialog.setOnShowListener(d -> dialog.getButton(-1).setOnClickListener(v -> {
             if (SystemClock.elapsedRealtime() < pinBlockedUntil) return;
             if (settings.checkPin(code.getText().toString())) { pinAttempts = 0; dialog.dismiss(); done.run(); }
@@ -217,7 +219,8 @@ public class MainActivity extends Activity {
         return PresencePolicy.sleeping(now.getHour()*60+now.getMinute(),PresencePolicy.time(settings.p.getString("sleepStart","01:30")),PresencePolicy.time(settings.p.getString("sleepEnd","09:00")));
     }
     void reconcile() {
-        if (!foreground || settingsOpen) return;
+        if (!foreground) return;
+        if (settingsOpen || pinDialogOpen) { if(night() && camera!=null) stopCamera(); return; }
         if (mode==Mode.ENROLLING) {
             if(night() || settings.p.getBoolean("guest",false)) {
                 stopCamera(); cancelEnrollment(); locked("",night()?Mode.SLEEP:Mode.GUEST);

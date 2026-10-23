@@ -26,11 +26,12 @@ final class PresenceReporter {
         String identity = settings.server() + settings.room() + state;
         if (identity.equals(previous)) return; previous=identity;
         final String endpoint=settings.server()+"api/presence", room=settings.room(), instant=Instant.now().toString();
+        final String token;
+        try { token=tokenSource.get(); } catch(Exception ignored) { return; }
+        if(token.isEmpty()) return;
         worker.execute(() -> {
             HttpURLConnection connection=null;
             try {
-                String token=tokenSource.get();
-                if (token.isEmpty()) return; // Configure the house token first; never send anonymous presence.
                 JSONObject body=new JSONObject().put("appareil", settings.p.getString("device", "asuka"))
                     .put("piece", room).put("teddy", teddy).put("heure", instant).put("etat", state);
                 byte[] data=body.toString().getBytes(StandardCharsets.UTF_8);

@@ -62,6 +62,16 @@ public class PrivacyFlowTest {
         assertNull(activity.web); assertFalse(activity.personal);
         assertEquals(MainActivity.Mode.STANDBY,activity.mode);
     }
+    @Test public void authenticationRemainsReadableDuringSleep() {
+        java.time.LocalTime now=java.time.LocalTime.now();
+        java.time.format.DateTimeFormatter format=java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+        activity.settings.p.edit().putString("sleepStart",now.minusMinutes(1).format(format))
+            .putString("sleepEnd",now.plusMinutes(1).format(format)).commit();
+        activity.authenticate(() -> {}); activity.reconcile();
+        assertTrue(activity.pinDialogOpen);
+        assertTrue(activity.getWindow().getAttributes().screenBrightness>.4f);
+        assertNull(activity.camera);
+    }
     @Test public void httpIsReservedToTheOneHouseAddress() {
         assertEquals("http://192.168.1.26:8765/",MainActivity.normalizeAddress("http://192.168.1.26:8765"));
         assertNull(MainActivity.normalizeAddress("http://192.168.1.27:8765/"));

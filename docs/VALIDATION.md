@@ -3,7 +3,7 @@
 Vérifications effectuées dans l'environnement cloud, le 23 octobre 2026 :
 
 - `python3 scripts/build_cloud.py` : réussite de la fabrication debug, de Lint et des tests.
-- 12 tests exécutés : 4 tests de politique de présence/sommeil, 7 tests de parcours Android avec Robolectric, 1 test HTTP de présence contre un serveur local. Aucun échec ni test ignoré.
+- 13 tests exécutés : 4 tests de politique de présence/sommeil, 8 tests de parcours Android avec Robolectric, 1 test HTTP de présence contre un serveur local. Aucun échec ni test ignoré.
 - Tests de confidentialité : démarrage verrouillé sans demande micro, masquage de la WebView, mode invité, fermeture des réglages en arrière-plan, serveur sans réponse, expiration de session et validation des adresses.
 - Test HTTP : JSON et jeton présents, changements de présence true/false, doublons supprimés, poursuite après 404, redirections non suivies. Il s'agit d'un serveur de test local, pas du serveur domestique.
 - Empreintes SHA-256 des deux modèles conformes aux pointeurs Git LFS officiels. Les deux fichiers exacts sont présents dans l'APK final.
